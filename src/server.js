@@ -60,7 +60,16 @@ const startServer = async () => {
   });
 };
 
-startServer().catch((error) => {
-  console.error("Failed to start server:", error);
-  process.exit(1);
-});
+if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+  startServer().catch((error) => {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  });
+} else {
+  // Jalankan inisialisasi schema secara asinkron di serverless startup
+  ensureSchema().catch((error) => {
+    console.error("Failed to run schema check on Vercel startup:", error);
+  });
+}
+
+export default app;
