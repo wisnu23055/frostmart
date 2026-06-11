@@ -1,7 +1,6 @@
 import * as service from "./auth.service.js";
-import { signupSchema, signinSchema } from "./auth.validation.js";
-import { setCookies } from "../../utils/cookie.js";
-import { updateMeSchema } from "./auth.validation.js";
+import { setCookies, clearCookies } from "../../utils/cookie.js";
+import { signupSchema, signinSchema, updateMeSchema } from "./auth.validation.js";
 
 export const signup = async (req, res) => {
   try {
@@ -80,8 +79,7 @@ export const removeSession = async (req, res) => {
     await service.removeSession();
 
     // clear cookies
-    res.clearCookie("access_token", { path: "/" });
-    res.clearCookie("refresh_token", { path: "/" });
+    clearCookies(res);
 
     res.json({ message: "Logged out successfully" });
   } catch (err) {
@@ -95,8 +93,7 @@ export const deleteMe = async (req, res) => {
     await service.deleteMe(userId);
 
     // clear cookies upon account deletion
-    res.clearCookie("access_token", { path: "/" });
-    res.clearCookie("refresh_token", { path: "/" });
+    clearCookies(res);
 
     res.json({ message: "Akun berhasil dihapus" });
   } catch (err) {
