@@ -6,7 +6,7 @@ export const handleUploadError = (middleware) => {
       if (err instanceof multer.MulterError) {
         if (err.code === "LIMIT_FILE_SIZE") {
           return res.status(400).json({
-            message: "Ukuran file maksimal 512KB",
+            message: "Ukuran file terlalu besar. Maksimal 2MB.",
           });
         }
       }
