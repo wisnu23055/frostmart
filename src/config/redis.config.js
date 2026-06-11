@@ -16,4 +16,8 @@ redisClient.on("error", (err) => {
   console.error("Redis error:", err);
 });
 
-await redisClient.connect();
+// Panggil connect tanpa await di level atas agar tidak memblokir startup serverless
+redisClient.connect().catch((err) => {
+  console.error("Failed to connect to Redis on startup:", err);
+});
+

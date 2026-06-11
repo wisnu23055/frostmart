@@ -28,13 +28,14 @@ export const getProductById = async (id) => {
   }
 
   const keys = ["image", "image2", "image3", "image4"];
-  for (const key of keys) {
-    const redisKey = key === "image" ? `product:image:${id}` : `product:${key}:${id}`;
-    const imageMeta = await redisClient.get(redisKey);
+  const redisKeys = keys.map((key) => key === "image" ? `product:image:${id}` : `product:${key}:${id}`);
+  const mGetResults = await redisClient.mGet(redisKeys);
+  keys.forEach((key, index) => {
+    const imageMeta = mGetResults[index];
     if (imageMeta) {
       product[key] = JSON.parse(imageMeta);
     }
-  }
+  });
 
   return product;
 };
@@ -43,18 +44,26 @@ export const getProductsWithPagination = async (page, limit, search = "") => {
   const products = await productRepository.getProducts(page, limit, search);
 
   const keys = ["image", "image2", "image3", "image4"];
-  const productsWithImages = await Promise.all(
-    products.map(async (product) => {
-      for (const key of keys) {
-        const redisKey = key === "image" ? `product:image:${product.id}` : `product:${key}:${product.id}`;
-        const imageMeta = await redisClient.get(redisKey);
+  const redisKeys = [];
+  products.forEach((product) => {
+    keys.forEach((key) => {
+      const redisKey = key === "image" ? `product:image:${product.id}` : `product:${key}:${product.id}`;
+      redisKeys.push(redisKey);
+    });
+  });
+
+  if (redisKeys.length > 0) {
+    const mGetResults = await redisClient.mGet(redisKeys);
+    let index = 0;
+    products.forEach((product) => {
+      keys.forEach((key) => {
+        const imageMeta = mGetResults[index++];
         if (imageMeta) {
           product[key] = JSON.parse(imageMeta);
         }
-      }
-      return product;
-    }),
-  );
+      });
+    });
+  }
 
   const totalData = await productRepository.getPages(limit, search);
   return {
@@ -62,7 +71,7 @@ export const getProductsWithPagination = async (page, limit, search = "") => {
     limit,
     search,
     total_pages: Number(totalData.total_pages),
-    data: productsWithImages,
+    data: products,
   };
 };
 
@@ -74,13 +83,15 @@ export const deleteProduct = async (id) => {
 
   // Hapus semua foto dari Redis dan Cloudinary
   const keys = ["image", "image2", "image3", "image4"];
-  for (const key of keys) {
-    const redisKey = key === "image" ? `product:image:${id}` : `product:${key}:${id}`;
-    const existingImage = await redisClient.get(redisKey);
+  const redisKeys = keys.map((key) => key === "image" ? `product:image:${id}` : `product:${key}:${id}`);
+  const existingImages = await redisClient.mGet(redisKeys);
+  
+  for (let i = 0; i < keys.length; i++) {
+    const existingImage = existingImages[i];
     if (existingImage) {
       const { public_id } = JSON.parse(existingImage);
       deleteImage(public_id).catch(() => {});
-      await redisClient.del(redisKey);
+      await redisClient.del(redisKeys[i]);
     }
   }
 
@@ -171,15 +182,16 @@ export const replaceProductPhoto = async (id, files) => {
 export const deleteProductPhoto = async (id) => {
   await getProductById(id);
   const keys = ["image", "image2", "image3", "image4"];
+  const redisKeys = keys.map((key) => key === "image" ? `product:image:${id}` : `product:${key}:${id}`);
+  const existingImages = await redisClient.mGet(redisKeys);
   let deletedAny = false;
 
-  for (const key of keys) {
-    const redisKey = key === "image" ? `product:image:${id}` : `product:${key}:${id}`;
-    const existingImage = await redisClient.get(redisKey);
+  for (let i = 0; i < keys.length; i++) {
+    const existingImage = existingImages[i];
     if (existingImage) {
       const { public_id: publicId } = JSON.parse(existingImage);
       await deleteImage(publicId);
-      await redisClient.del(redisKey);
+      await redisClient.del(redisKeys[i]);
       deletedAny = true;
     }
   }
