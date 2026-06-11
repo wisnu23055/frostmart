@@ -190,7 +190,22 @@ export const getMyOrders = async (userId) => {
     checkedOrders.push(order);
   }
 
-  return await Promise.all(checkedOrders.map(withItems));
+  // Batch fetch items to solve N+1 query problem
+  const orderIds = checkedOrders.map((o) => o.id);
+  const allItems = await ordersRepository.getBatchOrderItems(orderIds);
+
+  const itemsByOrderId = {};
+  allItems.forEach((item) => {
+    if (!itemsByOrderId[item.order_id]) {
+      itemsByOrderId[item.order_id] = [];
+    }
+    itemsByOrderId[item.order_id].push(item);
+  });
+
+  return checkedOrders.map((order) => ({
+    ...order,
+    items: itemsByOrderId[order.id] || [],
+  }));
 };
 
 export const getAllOrders = async () => {
@@ -234,7 +249,22 @@ export const getAllOrders = async () => {
     checkedOrders.push(order);
   }
 
-  return await Promise.all(checkedOrders.map(withItems));
+  // Batch fetch items to solve N+1 query problem
+  const orderIds = checkedOrders.map((o) => o.id);
+  const allItems = await ordersRepository.getBatchOrderItems(orderIds);
+
+  const itemsByOrderId = {};
+  allItems.forEach((item) => {
+    if (!itemsByOrderId[item.order_id]) {
+      itemsByOrderId[item.order_id] = [];
+    }
+    itemsByOrderId[item.order_id].push(item);
+  });
+
+  return checkedOrders.map((order) => ({
+    ...order,
+    items: itemsByOrderId[order.id] || [],
+  }));
 };
 
 export const updateOrderStatus = async (id, status) => {

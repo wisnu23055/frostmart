@@ -152,3 +152,16 @@ export const updateOrderStatus = async (id, status) => {
 
   return rows[0];
 };
+
+export const getBatchOrderItems = async (orderIds) => {
+  if (!orderIds || orderIds.length === 0) return [];
+  const { rows } = await db.query(
+    `SELECT oi.id, oi.order_id, oi.product_id, p.name AS product_name, p.name AS "productName", oi.quantity, oi.price
+     FROM order_items oi
+     JOIN products p ON p.id = oi.product_id
+     WHERE oi.order_id = ANY($1)
+     ORDER BY oi.id`,
+    [orderIds],
+  );
+  return rows;
+};
