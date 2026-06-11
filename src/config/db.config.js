@@ -11,7 +11,12 @@ pkg.types.setTypeParser(1114, (str) => {
   return new Date(str.replace(" ", "T") + "Z");
 });
 
-// Membuat koneksi ke postgres dengan pooling
+const isProduction = process.env.NODE_ENV === "production";
+
+// Membuat koneksi ke postgres dengan pooling yang didesain untuk serverless
 export const db = new Pool({
   connectionString: process.env.DATABASE_URL,
+  max: isProduction ? 2 : 10, // batasi jumlah koneksi di serverless production agar tidak exhausting
+  idleTimeoutMillis: 15000,
+  connectionTimeoutMillis: 3000,
 });

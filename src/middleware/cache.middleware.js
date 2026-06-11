@@ -15,8 +15,11 @@ export const cacheMiddleware = (ttl = 60) => {
 
       const originalJson = res.json.bind(res);
 
-      res.json = async (data) => {
-        await setCache(key, data, ttl);
+      res.json = (data) => {
+        // Simpan cache di background tanpa await agar respon ke user tidak tertunda
+        setCache(key, data, ttl).catch((err) => {
+          console.error("Failed to write cache in background:", err);
+        });
         return originalJson({
           source: "db",
           ...data,

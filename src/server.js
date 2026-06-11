@@ -66,10 +66,7 @@ if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
     process.exit(1);
   });
 } else {
-  // Jalankan inisialisasi schema secara asinkron di serverless startup
-  ensureSchema().catch((error) => {
-    console.error("Failed to run schema check on Vercel startup:", error);
-  });
+  console.log("Running in serverless production on Vercel (schema check skipped on startup)");
 }
 
 export default app;
